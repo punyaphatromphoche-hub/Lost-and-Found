@@ -1,20 +1,36 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ItemCard from '@/components/ItemCard';
 import SearchBar from '@/components/SearchBar';
-import { filterItems } from '@/utils/api';
+import { getItems, filterItems, subscribeItems } from '@/utils/api';
 
 export default function LostPage() {
   const [items, setItems] = useState([]);
+  const [searchParams, setSearchParams] = useState({ keyword: '', category: 'all' });
+
+  // ฟังก์ชันโหลดข้อมูลของหายจาก localStorage
+  const refreshData = useCallback((params = searchParams) => {
+    const all = getItems();
+    setItems(filterItems({ type: 'lost', keyword: params.keyword, category: params.category, items: all }));
+  }, [searchParams]);
 
   useEffect(() => {
-    setItems(filterItems({ type: 'lost' }));
-  }, []);
+    refreshData();
+
+    // ติดตามการอัปเดตแบบเรียลไทม์เมื่อมีการแจ้งของหายเพิ่ม
+    const unsubscribe = subscribeItems(() => {
+      refreshData();
+    });
+
+    return () => unsubscribe();
+  }, [refreshData]);
 
   const handleSearch = ({ keyword, category }) => {
-    setItems(filterItems({ type: 'lost', keyword, category }));
+    const nextParams = { keyword, category };
+    setSearchParams(nextParams);
+    refreshData(nextParams);
   };
 
   return (

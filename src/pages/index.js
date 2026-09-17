@@ -1,24 +1,39 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ItemCard from '@/components/ItemCard';
 import SearchBar from '@/components/SearchBar';
-import { filterItems } from '@/utils/api';
+import { getItems, filterItems, subscribeItems } from '@/utils/api';
 
 export default function Home() {
   const [items, setItems] = useState([]);
   const [filteredItems, setFilteredItems] = useState([]);
+  const [searchParams, setSearchParams] = useState({ keyword: '', category: 'all' });
+
+  // ฟังก์ชันโหลดข้อมูลจาก localStorage
+  const refreshData = useCallback((params = searchParams) => {
+    const all = getItems();
+    setItems(all);
+    const filtered = filterItems({ type: 'all', keyword: params.keyword, category: params.category, items: all });
+    setFilteredItems(filtered.slice(0, 6)); // แสดง 6 รายการล่าสุดที่หน้าหลัก
+  }, [searchParams]);
 
   useEffect(() => {
-    const data = filterItems({ type: 'all' });
-    setItems(data);
-    setFilteredItems(data.slice(0, 6)); // Show latest 6 on landing page
-  }, []);
+    refreshData();
+
+    // ติดตามการเปลี่ยนแปลงเมื่อมีการเพิ่มข้อมูลใหม่ เพื่ออัปเดต state ทันที
+    const unsubscribe = subscribeItems(() => {
+      refreshData();
+    });
+
+    return () => unsubscribe();
+  }, [refreshData]);
 
   const handleSearch = ({ keyword, category }) => {
-    const results = filterItems({ type: 'all', keyword, category });
-    setFilteredItems(results.slice(0, 6));
+    const nextParams = { keyword, category };
+    setSearchParams(nextParams);
+    refreshData(nextParams);
   };
 
   const lostCount = items.filter((i) => i.type === 'lost').length;

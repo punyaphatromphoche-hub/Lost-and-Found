@@ -19,6 +19,7 @@ export default function ReportPage() {
   });
 
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (router.query.type === 'found' || router.query.type === 'lost') {
@@ -33,21 +34,33 @@ export default function ReportPage() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!formData.title || !formData.location) {
+    if (!formData.title.trim() || !formData.location.trim()) {
       alert('กรุณากรอกชื่อสิ่งของและสถานที่');
       return;
     }
 
-    addItem(formData);
+    setIsSubmitting(true);
+
+    // บันทึกลง localStorage และส่ง event อัปเดตข้อมูลทันที
+    const newItem = addItem({
+      ...formData,
+      title: formData.title.trim(),
+      location: formData.location.trim(),
+      description: formData.description.trim(),
+      contactName: formData.contactName.trim(),
+      contactInfo: formData.contactInfo.trim(),
+    });
+
     setSubmitted(true);
 
+    // นำทางไปยังหน้ารายการที่เกี่ยวข้องหลังจากบันทึกเสร็จ
     setTimeout(() => {
-      if (formData.type === 'lost') {
+      if (newItem.type === 'lost') {
         router.push('/lost');
       } else {
         router.push('/found');
       }
-    }, 1200);
+    }, 1000);
   };
 
   return (
@@ -77,7 +90,7 @@ export default function ReportPage() {
               บันทึกข้อมูลเรียบร้อยแล้ว!
             </h2>
             <p className="text-emerald-700 text-sm">
-              กำลังนำท่านไปยังหน้ารายการ...
+              บันทึกลงระบบแล้ว กำลังนำท่านไปยังหน้ารายการ...
             </p>
           </div>
         ) : (
@@ -266,13 +279,22 @@ export default function ReportPage() {
             {/* Submit Button */}
             <button
               type="submit"
+              disabled={isSubmitting}
               className={`w-full min-h-[52px] py-3.5 px-4 rounded-2xl text-white font-bold text-base shadow-md transition-all touch-active flex items-center justify-center space-x-2 ${
+                isSubmitting ? 'opacity-70 cursor-not-allowed' : ''
+              } ${
                 formData.type === 'lost'
                   ? 'bg-rose-600 hover:bg-rose-700 active:bg-rose-800 shadow-rose-200'
                   : 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 shadow-emerald-200'
               }`}
             >
-              <span>{formData.type === 'lost' ? '📢 ส่งข้อมูลแจ้งของหาย' : '🟢 ส่งข้อมูลแจ้งพบของ'}</span>
+              <span>
+                {isSubmitting
+                  ? 'กำลังบันทึกข้อมูล...'
+                  : formData.type === 'lost'
+                  ? '📢 ส่งข้อมูลแจ้งของหาย'
+                  : '🟢 ส่งข้อมูลแจ้งพบของ'}
+              </span>
             </button>
           </form>
         )}

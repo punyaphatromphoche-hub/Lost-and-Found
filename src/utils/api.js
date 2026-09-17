@@ -1,5 +1,5 @@
 // Mock initial data for Lost & Found items (BJ3 School)
-const INITIAL_ITEMS = [
+export const INITIAL_ITEMS = [
   {
     id: 'item-1',
     type: 'lost',
@@ -86,41 +86,54 @@ const INITIAL_ITEMS = [
   },
 ];
 
-const STORAGE_KEY = 'bj3_lost_and_found_items';
+export const STORAGE_KEY = 'bj3_lost_and_found_items';
 
 /**
- * Get all items from local storage or default dataset
+ * Get all items from local storage.
+ * - If data already exists in localStorage: retrieve and return it directly (never overwrite with mock data).
+ * - If no data exists (first visit): initialize localStorage with INITIAL_ITEMS (Mock Data) and return it.
  */
 export function getItems() {
   if (typeof window === 'undefined') {
     return INITIAL_ITEMS;
   }
-  const stored = localStorage.getItem(STORAGE_KEY);
-  if (!stored) {
+
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+
+    // ตรวจสอบว่ามีข้อมูลอยู่ใน localStorage หรือยัง
+    if (stored !== null && stored !== undefined) {
+      // ถ้ามีแล้ว ให้ดึงข้อมูลที่มีอยู่ออกมาใช้ (ไม่ต้องโหลด Mock Data ทับ)
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed)) {
+        return parsed;
+      }
+    }
+
+    // ถ้ายังไม่มี (เข้าใช้งานครั้งแรก) ถึงค่อยใช้ Mock Data เป็นค่าเริ่มต้น
     localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_ITEMS));
     return INITIAL_ITEMS;
-  }
-  try {
-    return JSON.parse(stored);
-  } catch (e) {
+  } catch (error) {
+    console.error('Error reading from localStorage:', error);
     return INITIAL_ITEMS;
   }
 }
 
 /**
- * Filter items by type ('lost', 'found', or 'all') and optional criteria
+ * Filter items by type ('lost', 'found', or 'all') and optional search criteria.
+ * Can filter either directly from localStorage or from a provided items list.
  */
-export function filterItems({ type = 'all', keyword = '', category = 'all' } = {}) {
-  const items = getItems();
-  return items.filter((item) => {
-    // Match type
+export function filterItems({ type = 'all', keyword = '', category = 'all', items = null } = {}) {
+  const sourceItems = items || getItems();
+  return sourceItems.filter((item) => {
+    // กรองตามประเภท: lost หรือ found
     if (type !== 'all' && item.type !== type) return false;
 
-    // Match category
+    // กรองตามหมวดหมู่
     if (category !== 'all' && item.category !== category) return false;
 
-    // Match keyword
-    if (keyword.trim()) {
+    // กรองตามคำค้นหา (ชื่อสิ่งของ, สถานที่, หรือรายละเอียด)
+    if (keyword && keyword.trim()) {
       const q = keyword.trim().toLowerCase();
       const matchTitle = item.title?.toLowerCase().includes(q);
       const matchLoc = item.location?.toLowerCase().includes(q);
@@ -133,7 +146,11 @@ export function filterItems({ type = 'all', keyword = '', category = 'all' } = {
 }
 
 /**
- * Add a new lost or found item report
+ * Add a new lost or found item report.
+ * - Reads current items from localStorage (without resetting).
+ * - Prepends the new item to the top.
+ * - Saves back to localStorage.
+ * - Dispatches 'bj3_items_updated' event to update UI states across components immediately.
  */
 export function addItem(itemData) {
   const current = getItems();
@@ -143,9 +160,54 @@ export function addItem(itemData) {
     status: itemData.type === 'lost' ? 'searching' : 'found',
     ...itemData,
   };
+
   const updated = [newItem, ...current];
+
   if (typeof window !== 'undefined') {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+
+      // ส่ง Custom Event ให้หน้าต่างๆ รับรู้และอัปเดต state ทันที
+      window.dispatchEvent(new CustomEvent('bj3_items_updated', { detail: updated }));
+      window.dispatchEvent(new Event('storage'));
+    } catch (error) {
+      console.error('Error saving to localStorage:', error);
+    }
   }
+
   return newItem;
+}
+
+/**
+ * Subscribe to item changes (both same-tab custom events and cross-tab storage events).
+ * Allows components to reactively update their state whenever an item is added.
+ */
+export function subscribeItems(callback) {
+  if (typeof window === 'undefined') {
+    return () => {};
+  }
+
+  const handler = () => {
+    callback(getItems());
+  };
+
+  window.addEventListener('bj3_items_updated', handler);
+  window.addEventListener('storage', handler);
+
+  return () => {
+    window.removeEventListener('bj3_items_updated', handler);
+    window.removeEventListener('storage', handler);
+  };
+}
+
+/**
+ * Reset localStorage to initial mock data (optional utility)
+ */
+export function resetToInitialData() {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_ITEMS));
+    window.dispatchEvent(new CustomEvent('bj3_items_updated', { detail: INITIAL_ITEMS }));
+    window.dispatchEvent(new Event('storage'));
+  }
+  return INITIAL_ITEMS;
 }
