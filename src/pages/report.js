@@ -32,7 +32,7 @@ export default function ReportPage() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.title.trim() || !formData.location.trim()) {
       alert('กรุณากรอกชื่อสิ่งของและสถานที่');
@@ -41,26 +41,32 @@ export default function ReportPage() {
 
     setIsSubmitting(true);
 
-    // บันทึกลง localStorage และส่ง event อัปเดตข้อมูลทันที
-    const newItem = addItem({
-      ...formData,
-      title: formData.title.trim(),
-      location: formData.location.trim(),
-      description: formData.description.trim(),
-      contactName: formData.contactName.trim(),
-      contactInfo: formData.contactInfo.trim(),
-    });
+    try {
+      // บันทึกลง Supabase Cloud Database (ซิงค์ทุกเครื่อง) และ LocalStorage
+      const newItem = await addItem({
+        ...formData,
+        title: formData.title.trim(),
+        location: formData.location.trim(),
+        description: formData.description.trim(),
+        contactName: formData.contactName.trim(),
+        contactInfo: formData.contactInfo.trim(),
+      });
 
-    setSubmitted(true);
+      setSubmitted(true);
 
-    // นำทางไปยังหน้ารายการที่เกี่ยวข้องหลังจากบันทึกเสร็จ
-    setTimeout(() => {
-      if (newItem.type === 'lost') {
-        router.push('/lost');
-      } else {
-        router.push('/found');
-      }
-    }, 1000);
+      // นำทางไปยังหน้ารายการที่เกี่ยวข้อง
+      setTimeout(() => {
+        if (newItem.type === 'lost') {
+          router.push('/lost');
+        } else {
+          router.push('/found');
+        }
+      }, 800);
+    } catch (err) {
+      console.error('Error reporting item:', err);
+      alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่อีกครั้ง');
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -77,7 +83,7 @@ export default function ReportPage() {
             แบบฟอร์มแจ้งของหาย / พบของ
           </h1>
           <p className="text-slate-600 text-xs sm:text-sm mt-1.5 max-w-lg mx-auto">
-            กรอกข้อมูลรายละเอียดสิ่งของเพื่อช่วยในการตามหา หรือส่งคืนเจ้าของตัวจริงในโรงเรียน BJ3
+            กรอกข้อมูลรายละเอียดสิ่งของเพื่อช่วยในการตามหา หรือส่งคืนเจ้าของตัวจริง ข้อมูลจะซิงค์ไปยังทุกเครื่องทันที
           </p>
         </div>
 
@@ -90,7 +96,7 @@ export default function ReportPage() {
               บันทึกข้อมูลเรียบร้อยแล้ว!
             </h2>
             <p className="text-emerald-700 text-sm">
-              บันทึกลงระบบแล้ว กำลังนำท่านไปยังหน้ารายการ...
+              บันทึกลงระบบออนไลน์แล้ว กำลังนำท่านไปยังหน้ารายการ...
             </p>
           </div>
         ) : (
@@ -290,7 +296,7 @@ export default function ReportPage() {
             >
               <span>
                 {isSubmitting
-                  ? 'กำลังบันทึกข้อมูล...'
+                  ? 'กำลังส่งข้อมูลขึ้นระบบคลาวด์...'
                   : formData.type === 'lost'
                   ? '📢 ส่งข้อมูลแจ้งของหาย'
                   : '🟢 ส่งข้อมูลแจ้งพบของ'}

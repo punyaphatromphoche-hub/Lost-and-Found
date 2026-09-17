@@ -1,3 +1,5 @@
+import { supabase } from './supabase';
+
 // Mock initial data for Lost & Found items (BJ3 School)
 export const INITIAL_ITEMS = [
   {
@@ -89,9 +91,47 @@ export const INITIAL_ITEMS = [
 export const STORAGE_KEY = 'bj3_lost_and_found_items';
 
 /**
- * Get all items from local storage.
- * - If data already exists in localStorage: retrieve and return it directly (never overwrite with mock data).
- * - If no data exists (first visit): initialize localStorage with INITIAL_ITEMS (Mock Data) and return it.
+ * แปลงฟิลด์จากรูปแบบฐานข้อมูล Supabase มาเป็น CamelCase ในแอป
+ */
+function mapFromDb(row) {
+  return {
+    id: row.id,
+    type: row.type,
+    title: row.title,
+    category: row.category,
+    location: row.location,
+    date: row.date,
+    imageUrl: row.image_url || row.imageUrl || '',
+    description: row.description || '',
+    contactName: row.contact_name || row.contactName || '',
+    contactInfo: row.contact_info || row.contactInfo || '',
+    status: row.status || (row.type === 'lost' ? 'searching' : 'found'),
+    createdAt: row.created_at || row.createdAt || new Date().toISOString(),
+  };
+}
+
+/**
+ * แปลงฟิลด์จากแอปไปเป็นรูปแบบฐานข้อมูล Supabase
+ */
+function mapToDb(item) {
+  return {
+    id: item.id,
+    type: item.type,
+    title: item.title,
+    category: item.category,
+    location: item.location,
+    date: item.date,
+    image_url: item.imageUrl || '',
+    description: item.description || '',
+    contact_name: item.contactName || '',
+    contact_info: item.contactInfo || '',
+    status: item.status || (item.type === 'lost' ? 'searching' : 'found'),
+    created_at: item.createdAt || new Date().toISOString(),
+  };
+}
+
+/**
+ * ดึงข้อมูลทันทีแบบ Synchronous จาก localStorage (ใช้สำหรับ Initial Render / Fallback)
  */
 export function getItems() {
   if (typeof window === 'undefined') {
@@ -100,17 +140,13 @@ export function getItems() {
 
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-
-    // ตรวจสอบว่ามีข้อมูลอยู่ใน localStorage หรือยัง
     if (stored !== null && stored !== undefined) {
-      // ถ้ามีแล้ว ให้ดึงข้อมูลที่มีอยู่ออกมาใช้ (ไม่ต้องโหลด Mock Data ทับ)
       const parsed = JSON.parse(stored);
-      if (Array.isArray(parsed)) {
+      if (Array.isArray(parsed) && parsed.length > 0) {
         return parsed;
       }
     }
 
-    // ถ้ายังไม่มี (เข้าใช้งานครั้งแรก) ถึงค่อยใช้ Mock Data เป็นค่าเริ่มต้น
     localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_ITEMS));
     return INITIAL_ITEMS;
   } catch (error) {
@@ -120,19 +156,53 @@ export function getItems() {
 }
 
 /**
- * Filter items by type ('lost', 'found', or 'all') and optional search criteria.
- * Can filter either directly from localStorage or from a provided items list.
+ * ดึงข้อมูลสดจาก Supabase Cloud Database ข้ามทุกเครื่อง (Async)
+ * พร้อมแคชลง localStorage เผื่อกรณีออฟไลน์
+ */
+export async function fetchItems() {
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('items')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (!error && Array.isArray(data)) {
+        if (data.length > 0) {
+          const mapped = data.map(mapFromDb);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(mapped));
+          }
+          return mapped;
+        } else {
+          // ถ้าตารางว่างเปล่าใน Supabase นำ initial items ขึ้นไปบันทึกครั้งแรก
+          try {
+            await supabase.from('items').insert(INITIAL_ITEMS.map(mapToDb));
+          } catch (e) {
+            console.warn('Could not seed initial items to Supabase:', e);
+          }
+          return INITIAL_ITEMS;
+        }
+      } else if (error) {
+        console.warn('Supabase query warning (fallback to localStorage):', error.message);
+      }
+    } catch (err) {
+      console.warn('Supabase connection error (fallback to localStorage):', err);
+    }
+  }
+
+  return getItems();
+}
+
+/**
+ * กรองข้อมูลตามเงื่อนไข (ประเภท, คำค้นหา, หมวดหมู่)
  */
 export function filterItems({ type = 'all', keyword = '', category = 'all', items = null } = {}) {
   const sourceItems = items || getItems();
   return sourceItems.filter((item) => {
-    // กรองตามประเภท: lost หรือ found
     if (type !== 'all' && item.type !== type) return false;
-
-    // กรองตามหมวดหมู่
     if (category !== 'all' && item.category !== category) return false;
 
-    // กรองตามคำค้นหา (ชื่อสิ่งของ, สถานที่, หรือรายละเอียด)
     if (keyword && keyword.trim()) {
       const q = keyword.trim().toLowerCase();
       const matchTitle = item.title?.toLowerCase().includes(q);
@@ -146,14 +216,12 @@ export function filterItems({ type = 'all', keyword = '', category = 'all', item
 }
 
 /**
- * Add a new lost or found item report.
- * - Reads current items from localStorage (without resetting).
- * - Prepends the new item to the top.
- * - Saves back to localStorage.
- * - Dispatches 'bj3_items_updated' event to update UI states across components immediately.
+ * เพิ่มรายการของหายหรือของที่พบใหม่
+ * - บันทึกลง Supabase Cloud Database ทันที (เพื่อให้ทุกเครื่องเห็นข้อมูลตรงกัน)
+ * - บันทึกลง LocalStorage
+ * - ส่ง Event แจ้งเตือนทุกหน้าให้อัปเดต UI ทันที
  */
-export function addItem(itemData) {
-  const current = getItems();
+export async function addItem(itemData) {
   const newItem = {
     id: `item-${Date.now()}`,
     createdAt: new Date().toISOString(),
@@ -161,17 +229,30 @@ export function addItem(itemData) {
     ...itemData,
   };
 
-  const updated = [newItem, ...current];
+  // 1. บันทึกลง LocalStorage ก่อนทันทีเพื่อให้ UI ตอบสนองรวดเร็ว
+  const current = getItems();
+  const updated = [newItem, ...current.filter((i) => i.id !== newItem.id)];
 
   if (typeof window !== 'undefined') {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-
-      // ส่ง Custom Event ให้หน้าต่างๆ รับรู้และอัปเดต state ทันที
       window.dispatchEvent(new CustomEvent('bj3_items_updated', { detail: updated }));
       window.dispatchEvent(new Event('storage'));
-    } catch (error) {
-      console.error('Error saving to localStorage:', error);
+    } catch (e) {
+      console.error('Error saving to localStorage:', e);
+    }
+  }
+
+  // 2. ส่งขึ้น Supabase Cloud Database เพื่อให้เครื่องอื่นๆ ทั่วโลกเห็นข้อมูลเดียวกัน
+  if (supabase) {
+    try {
+      const dbRecord = mapToDb(newItem);
+      const { error } = await supabase.from('items').insert([dbRecord]);
+      if (error) {
+        console.error('Error saving to Supabase:', error.message);
+      }
+    } catch (err) {
+      console.error('Supabase insert exception:', err);
     }
   }
 
@@ -179,35 +260,47 @@ export function addItem(itemData) {
 }
 
 /**
- * Subscribe to item changes (both same-tab custom events and cross-tab storage events).
- * Allows components to reactively update their state whenever an item is added.
+ * ติดตามการเปลี่ยนแปลงข้อมูลแบบเรียลไทม์ (Supabase Realtime + Local Events)
+ * เมื่อเครื่องอื่นพิมพ์แจ้งของหาย ข้อมูลบนหน้านี้จะอัปเดตอัตโนมัติทันที
  */
 export function subscribeItems(callback) {
   if (typeof window === 'undefined') {
     return () => {};
   }
 
-  const handler = () => {
+  // Local Event listener
+  const localHandler = () => {
     callback(getItems());
   };
 
-  window.addEventListener('bj3_items_updated', handler);
-  window.addEventListener('storage', handler);
+  window.addEventListener('bj3_items_updated', localHandler);
+  window.addEventListener('storage', localHandler);
+
+  // Supabase Realtime Channel
+  let channel = null;
+  if (supabase) {
+    try {
+      channel = supabase
+        .channel('public:items')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'items' },
+          async () => {
+            const freshItems = await fetchItems();
+            callback(freshItems);
+          }
+        )
+        .subscribe();
+    } catch (e) {
+      console.warn('Realtime subscription error:', e);
+    }
+  }
 
   return () => {
-    window.removeEventListener('bj3_items_updated', handler);
-    window.removeEventListener('storage', handler);
+    window.removeEventListener('bj3_items_updated', localHandler);
+    window.removeEventListener('storage', localHandler);
+    if (channel && supabase) {
+      supabase.removeChannel(channel);
+    }
   };
-}
-
-/**
- * Reset localStorage to initial mock data (optional utility)
- */
-export function resetToInitialData() {
-  if (typeof window !== 'undefined') {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_ITEMS));
-    window.dispatchEvent(new CustomEvent('bj3_items_updated', { detail: INITIAL_ITEMS }));
-    window.dispatchEvent(new Event('storage'));
-  }
-  return INITIAL_ITEMS;
 }

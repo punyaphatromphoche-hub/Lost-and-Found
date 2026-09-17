@@ -4,28 +4,39 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ItemCard from '@/components/ItemCard';
 import SearchBar from '@/components/SearchBar';
-import { getItems, filterItems, subscribeItems } from '@/utils/api';
+import { getItems, fetchItems, filterItems, subscribeItems } from '@/utils/api';
 
 export default function FoundPage() {
   const [items, setItems] = useState([]);
   const [searchParams, setSearchParams] = useState({ keyword: '', category: 'all' });
 
-  // ฟังก์ชันโหลดข้อมูลของที่เก็บได้จาก localStorage
-  const refreshData = useCallback((params = searchParams) => {
-    const all = getItems();
-    setItems(filterItems({ type: 'found', keyword: params.keyword, category: params.category, items: all }));
+  // ฟังก์ชันโหลดข้อมูลของที่เก็บได้จากแคช และดึงข้อมูลสดจาก Supabase Cloud
+  const refreshData = useCallback(async (params = searchParams) => {
+    // แสดงแคชก่อนทันที
+    const cached = getItems();
+    setItems(filterItems({ type: 'found', keyword: params.keyword, category: params.category, items: cached }));
+
+    // ซิงค์ข้อมูลล่าสุดจาก Cloud Database
+    const cloud = await fetchItems();
+    if (cloud && cloud.length > 0) {
+      setItems(filterItems({ type: 'found', keyword: params.keyword, category: params.category, items: cloud }));
+    }
   }, [searchParams]);
 
   useEffect(() => {
     refreshData();
 
-    // ติดตามการอัปเดตแบบเรียลไทม์เมื่อมีการแจ้งพบของเพิ่ม
-    const unsubscribe = subscribeItems(() => {
-      refreshData();
+    // ติดตามการอัปเดตแบบเรียลไทม์ (เมื่อมีเครื่องอื่นแจ้งพบของ ข้อมูลจะขึ้นทันที)
+    const unsubscribe = subscribeItems((updatedList) => {
+      if (updatedList) {
+        setItems(filterItems({ type: 'found', keyword: searchParams.keyword, category: searchParams.category, items: updatedList }));
+      } else {
+        refreshData();
+      }
     });
 
     return () => unsubscribe();
-  }, [refreshData]);
+  }, [refreshData, searchParams]);
 
   const handleSearch = ({ keyword, category }) => {
     const nextParams = { keyword, category };
@@ -48,7 +59,7 @@ export default function FoundPage() {
               รายการสิ่งของที่เก็บได้
             </h1>
             <p className="text-emerald-100 text-xs sm:text-sm mt-1 max-w-xl leading-relaxed">
-              รวมรายการสิ่งของที่เก็บได้ในโรงเรียน BJ3 รอเจ้าของมาติดต่อขอรับคืน หากคิดว่าเป็นของคุณ สามารถกดดูจุดติดต่อได้เลยครับ
+              รวมรายการสิ่งของที่เก็บได้ในโรงเรียน BJ3 รอเจ้าของมาติดต่อขอรับคืน ข้อมูลออนไลน์ซิงค์ตรงกันทุกอุปกรณ์
             </p>
           </div>
           <Link

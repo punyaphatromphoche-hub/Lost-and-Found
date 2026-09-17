@@ -4,31 +4,46 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ItemCard from '@/components/ItemCard';
 import SearchBar from '@/components/SearchBar';
-import { getItems, filterItems, subscribeItems } from '@/utils/api';
+import { getItems, fetchItems, filterItems, subscribeItems } from '@/utils/api';
 
 export default function Home() {
   const [items, setItems] = useState([]);
   const [filteredItems, setFilteredItems] = useState([]);
   const [searchParams, setSearchParams] = useState({ keyword: '', category: 'all' });
 
-  // ฟังก์ชันโหลดข้อมูลจาก localStorage
-  const refreshData = useCallback((params = searchParams) => {
-    const all = getItems();
-    setItems(all);
-    const filtered = filterItems({ type: 'all', keyword: params.keyword, category: params.category, items: all });
-    setFilteredItems(filtered.slice(0, 6)); // แสดง 6 รายการล่าสุดที่หน้าหลัก
+  // ฟังก์ชันโหลดข้อมูล: แสดงผลจากแคชทันที แล้วดึงข้อมูลสดจาก Supabase Cloud
+  const refreshData = useCallback(async (params = searchParams) => {
+    // โหลดแคชทันที
+    const cached = getItems();
+    setItems(cached);
+    const filteredCached = filterItems({ type: 'all', keyword: params.keyword, category: params.category, items: cached });
+    setFilteredItems(filteredCached.slice(0, 6));
+
+    // ดึงข้อมูลสดจาก Cloud Database ข้ามเครื่อง
+    const cloudData = await fetchItems();
+    if (cloudData && cloudData.length > 0) {
+      setItems(cloudData);
+      const filteredCloud = filterItems({ type: 'all', keyword: params.keyword, category: params.category, items: cloudData });
+      setFilteredItems(filteredCloud.slice(0, 6));
+    }
   }, [searchParams]);
 
   useEffect(() => {
     refreshData();
 
-    // ติดตามการเปลี่ยนแปลงเมื่อมีการเพิ่มข้อมูลใหม่ เพื่ออัปเดต state ทันที
-    const unsubscribe = subscribeItems(() => {
-      refreshData();
+    // ติดตามการอัปเดตแบบเรียลไทม์ (เมื่อมีคนแจ้งของหายจากเครื่องอื่น จะอัปเดตทันที)
+    const unsubscribe = subscribeItems((updatedList) => {
+      if (updatedList) {
+        setItems(updatedList);
+        const filtered = filterItems({ type: 'all', keyword: searchParams.keyword, category: searchParams.category, items: updatedList });
+        setFilteredItems(filtered.slice(0, 6));
+      } else {
+        refreshData();
+      }
     });
 
     return () => unsubscribe();
-  }, [refreshData]);
+  }, [refreshData, searchParams]);
 
   const handleSearch = ({ keyword, category }) => {
     const nextParams = { keyword, category };
@@ -54,7 +69,7 @@ export default function Home() {
             ระบบแจ้งของหายและค้นหาของที่พบ
           </h1>
           <p className="text-blue-100 text-sm sm:text-base md:text-lg max-w-2xl mx-auto mb-6 sm:mb-8 font-normal leading-relaxed px-2">
-            ศูนย์กลางช่วยเหลือตามหาสิ่งของที่สูญหาย และส่งคืนของที่เก็บได้ในบริเวณโรงเรียน BJ3 สะดวกรวดเร็ว ปลอดภัย และใช้งานง่ายบนทุกอุปกรณ์
+            ศูนย์กลางช่วยเหลือตามหาสิ่งของที่สูญหาย และส่งคืนของที่เก็บได้ในบริเวณโรงเรียน BJ3 ข้อมูลเชื่อมต่อออนไลน์อัปเดตตรงกันทุกอุปกรณ์
           </p>
 
           {/* Quick CTA Buttons */}
@@ -84,8 +99,8 @@ export default function Home() {
               <div className="text-[11px] sm:text-xs text-blue-200 mt-0.5">ของที่เก็บได้</div>
             </div>
             <div className="bg-blue-800/60 backdrop-blur-sm rounded-xl p-2.5 sm:p-3.5 border border-blue-700/50">
-              <div className="text-xl sm:text-3xl font-black text-blue-200">100%</div>
-              <div className="text-[11px] sm:text-xs text-blue-200 mt-0.5">เพื่อชาว BJ3</div>
+              <div className="text-xl sm:text-3xl font-black text-blue-200">Online</div>
+              <div className="text-[11px] sm:text-xs text-blue-200 mt-0.5">ซิงค์ข้ามเครื่อง</div>
             </div>
           </div>
         </div>
@@ -125,7 +140,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Items Grid (Optimized for Mobile, iPad, and Desktop) */}
+        {/* Items Grid */}
         {filteredItems.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {filteredItems.map((item) => (

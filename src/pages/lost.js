@@ -4,28 +4,39 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ItemCard from '@/components/ItemCard';
 import SearchBar from '@/components/SearchBar';
-import { getItems, filterItems, subscribeItems } from '@/utils/api';
+import { getItems, fetchItems, filterItems, subscribeItems } from '@/utils/api';
 
 export default function LostPage() {
   const [items, setItems] = useState([]);
   const [searchParams, setSearchParams] = useState({ keyword: '', category: 'all' });
 
-  // ฟังก์ชันโหลดข้อมูลของหายจาก localStorage
-  const refreshData = useCallback((params = searchParams) => {
-    const all = getItems();
-    setItems(filterItems({ type: 'lost', keyword: params.keyword, category: params.category, items: all }));
+  // ฟังก์ชันโหลดข้อมูลของหายจากแคช และดึงข้อมูลสดจาก Supabase Cloud
+  const refreshData = useCallback(async (params = searchParams) => {
+    // แสดงแคชก่อนทันที
+    const cached = getItems();
+    setItems(filterItems({ type: 'lost', keyword: params.keyword, category: params.category, items: cached }));
+
+    // ซิงค์ข้อมูลล่าสุดจาก Cloud Database
+    const cloud = await fetchItems();
+    if (cloud && cloud.length > 0) {
+      setItems(filterItems({ type: 'lost', keyword: params.keyword, category: params.category, items: cloud }));
+    }
   }, [searchParams]);
 
   useEffect(() => {
     refreshData();
 
-    // ติดตามการอัปเดตแบบเรียลไทม์เมื่อมีการแจ้งของหายเพิ่ม
-    const unsubscribe = subscribeItems(() => {
-      refreshData();
+    // ติดตามการอัปเดตแบบเรียลไทม์ (เมื่อมีเครื่องอื่นแจ้งของหาย ข้อมูลจะขึ้นทันที)
+    const unsubscribe = subscribeItems((updatedList) => {
+      if (updatedList) {
+        setItems(filterItems({ type: 'lost', keyword: searchParams.keyword, category: searchParams.category, items: updatedList }));
+      } else {
+        refreshData();
+      }
     });
 
     return () => unsubscribe();
-  }, [refreshData]);
+  }, [refreshData, searchParams]);
 
   const handleSearch = ({ keyword, category }) => {
     const nextParams = { keyword, category };
@@ -48,7 +59,7 @@ export default function LostPage() {
               รายการสิ่งของที่หาย
             </h1>
             <p className="text-rose-100 text-xs sm:text-sm mt-1 max-w-xl leading-relaxed">
-              รวมรายการสิ่งของที่นักเรียนและคุณครูแจ้งว่าสูญหายภายในโรงเรียน BJ3 หากคุณพบเห็นสามารถติดต่อส่งคืนได้
+              รวมรายการสิ่งของที่นักเรียนและคุณครูแจ้งว่าสูญหายภายในโรงเรียน BJ3 ข้อมูลเชื่อมต่อกับระบบคลาวด์อัปเดตตรงกันทุกเครื่อง
             </p>
           </div>
           <Link
