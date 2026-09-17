@@ -1,0 +1,17 @@
+{
+  "name": "BJ3 Lost & Found - ระบบแจ้งของหาย",
+  "short_name": "BJ3 Lost",
+  "description": "ระบบแจ้งของหายและค้นหาของที่หาย โรงเรียน BJ3 (บรรหารแจ่มใสวิทยา 3)",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1e3a8a",
+  "theme_color": "#1e3a8a",
+  "icons": [
+    {
+      "src": "/images/logo.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

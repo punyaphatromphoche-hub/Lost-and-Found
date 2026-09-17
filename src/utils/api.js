@@ -1,4 +1,4 @@
-// Mock initial data for Lost & Found items
+// Mock initial data for Lost & Found items (BJ3 School)
 const INITIAL_ITEMS = [
   {
     id: 'item-1',
@@ -38,7 +38,7 @@ const INITIAL_ITEMS = [
     imageUrl: 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=500&auto=format&fit=crop&q=60',
     description: 'ขวดน้ำสีฟ้าพาสเทล มีสติกเกอร์ชื่อ "Nicha" ติดอยู่ข้างขวด หายหลังคาบพละ',
     contactName: 'ณิชา ม.5/2',
-    contactInfo: 'IG: nicha_bjs3',
+    contactInfo: 'IG: nicha_bj3',
     status: 'searching',
     createdAt: '2026-09-01T15:40:00Z',
   },
@@ -51,7 +51,7 @@ const INITIAL_ITEMS = [
     date: '2026-09-03',
     imageUrl: 'https://images.unsplash.com/photo-1589578527966-fdac0f44566c?w=500&auto=format&fit=crop&q=60',
     description: 'พวงกุญแจรูปหมี มีกุญแจมอเตอร์ไซค์ 1 ดอก และกุญแจบ้าน 1 ดอก นำฝากไว้ที่ห้องประชาสัมพันธ์แล้ว',
-    contactName: 'ห้องประชาสัมพันธ์',
+    contactName: 'ห้องประชาสัมพันธ์ โรงเรียน BJ3',
     contactInfo: 'อาคาร 1 ชั้น 1 โทร. 035-XXXXXX ต่อ 101',
     status: 'found',
     createdAt: '2026-09-03T07:45:00Z',
@@ -78,7 +78,7 @@ const INITIAL_ITEMS = [
     location: 'โรงยิมเนเซียม',
     date: '2026-09-02',
     imageUrl: 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=500&auto=format&fit=crop&q=60',
-    description: 'เสื้อวอร์มสีกรมท่า ปักตราโรงเรียนด้านหน้า ขนาด L พบตกอยู่บนอัฒจันทร์โรงยิม',
+    description: 'เสื้อวอร์มสีกรมท่า ปักตราโรงเรียน BJ3 ด้านหน้า ขนาด L พบตกอยู่บนอัฒจันทร์โรงยิม',
     contactName: 'ครูเวรประจำโรงยิม',
     contactInfo: 'ติดต่อห้องพักครูพลศึกษา',
     status: 'found',
@@ -86,7 +86,7 @@ const INITIAL_ITEMS = [
   },
 ];
 
-const STORAGE_KEY = 'bjs3_lost_and_found_items';
+const STORAGE_KEY = 'bj3_lost_and_found_items';
 
 /**
  * Get all items from local storage or default dataset

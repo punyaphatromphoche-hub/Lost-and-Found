@@ -47,30 +47,33 @@ export default function ReportPage() {
       } else {
         router.push('/found');
       }
-    }, 1500);
+    }, 1200);
   };
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
       <Navbar />
 
-      <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex-1 w-full">
+      <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 flex-1 w-full">
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-extrabold text-slate-800">
+        <div className="text-center mb-6 sm:mb-8">
+          <span className="inline-block px-3 py-1 bg-blue-100 text-blue-900 text-xs font-bold rounded-full mb-2">
+            🏫 โรงเรียน BJ3
+          </span>
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-800">
             แบบฟอร์มแจ้งของหาย / พบของ
           </h1>
-          <p className="text-slate-600 text-sm mt-2">
-            กรอกข้อมูลรายละเอียดสิ่งของเพื่อช่วยในการตามหา หรือส่งคืนเจ้าของตัวจริง
+          <p className="text-slate-600 text-xs sm:text-sm mt-1.5 max-w-lg mx-auto">
+            กรอกข้อมูลรายละเอียดสิ่งของเพื่อช่วยในการตามหา หรือส่งคืนเจ้าของตัวจริงในโรงเรียน BJ3
           </p>
         </div>
 
         {submitted ? (
-          <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-8 text-center animate-fadeIn">
+          <div className="bg-emerald-50 border border-emerald-200 rounded-3xl p-8 text-center animate-fadeIn shadow-sm">
             <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
               ✓
             </div>
-            <h2 className="text-xl font-bold text-emerald-800 mb-2">
+            <h2 className="text-xl font-bold text-emerald-800 mb-1">
               บันทึกข้อมูลเรียบร้อยแล้ว!
             </h2>
             <p className="text-emerald-700 text-sm">
@@ -80,42 +83,42 @@ export default function ReportPage() {
         ) : (
           <form
             onSubmit={handleSubmit}
-            className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8 space-y-6"
+            className="bg-white rounded-3xl shadow-md border border-slate-200 p-5 sm:p-8 space-y-5 sm:space-y-6"
           >
             {/* Type Selector Tabs */}
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2">
+              <label className="block text-xs sm:text-sm font-bold text-slate-700 mb-2">
                 ประเภทการแจ้ง <span className="text-rose-500">*</span>
               </label>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
                 <button
                   type="button"
                   onClick={() => setFormData({ ...formData, type: 'lost' })}
-                  className={`py-3 px-4 rounded-xl border text-sm font-bold flex items-center justify-center space-x-2 transition-all ${
+                  className={`min-h-[50px] py-3 px-3 sm:px-4 rounded-2xl border text-sm font-bold flex items-center justify-center space-x-1.5 transition-all touch-active ${
                     formData.type === 'lost'
-                      ? 'border-rose-500 bg-rose-50 text-rose-700 ring-2 ring-rose-500'
-                      : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                      ? 'border-rose-500 bg-rose-50 text-rose-700 ring-2 ring-rose-500 shadow-sm'
+                      : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'
                   }`}
                 >
-                  <span>🔴 แจ้งของหาย (Lost)</span>
+                  <span>🔴 แจ้งของหาย</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setFormData({ ...formData, type: 'found' })}
-                  className={`py-3 px-4 rounded-xl border text-sm font-bold flex items-center justify-center space-x-2 transition-all ${
+                  className={`min-h-[50px] py-3 px-3 sm:px-4 rounded-2xl border text-sm font-bold flex items-center justify-center space-x-1.5 transition-all touch-active ${
                     formData.type === 'found'
-                      ? 'border-emerald-500 bg-emerald-50 text-emerald-700 ring-2 ring-emerald-500'
-                      : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                      ? 'border-emerald-500 bg-emerald-50 text-emerald-700 ring-2 ring-emerald-500 shadow-sm'
+                      : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'
                   }`}
                 >
-                  <span>🟢 แจ้งเก็บของได้ (Found)</span>
+                  <span>🟢 แจ้งพบของ</span>
                 </button>
               </div>
             </div>
 
             {/* Title */}
             <div>
-              <label htmlFor="title" className="block text-sm font-semibold text-slate-700 mb-1">
+              <label htmlFor="title" className="block text-xs sm:text-sm font-bold text-slate-700 mb-1.5">
                 ชื่อสิ่งของ <span className="text-rose-500">*</span>
               </label>
               <input
@@ -125,15 +128,15 @@ export default function ReportPage() {
                 required
                 value={formData.title}
                 onChange={handleChange}
-                placeholder="เช่น กระเป๋าสตางค์ใบสั้น, โทรศัพท์ iPhone 13, เสื้อกันหนาว"
-                className="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-600 focus:border-transparent text-sm"
+                placeholder="เช่น กระเป๋าสตางค์ใบสั้น, โทรศัพท์ iPhone, เสื้อกันหนาว"
+                className="w-full px-4 py-3 sm:py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-600 focus:border-transparent text-base sm:text-sm shadow-xs"
               />
             </div>
 
             {/* Category & Date Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="category" className="block text-sm font-semibold text-slate-700 mb-1">
+                <label htmlFor="category" className="block text-xs sm:text-sm font-bold text-slate-700 mb-1.5">
                   หมวดหมู่ <span className="text-rose-500">*</span>
                 </label>
                 <select
@@ -141,7 +144,7 @@ export default function ReportPage() {
                   name="category"
                   value={formData.category}
                   onChange={handleChange}
-                  className="w-full px-4 py-2.5 rounded-lg border border-slate-300 bg-white focus:ring-2 focus:ring-blue-600 focus:border-transparent text-sm"
+                  className="w-full px-4 py-3 sm:py-2.5 rounded-xl border border-slate-300 bg-white focus:ring-2 focus:ring-blue-600 focus:border-transparent text-base sm:text-sm shadow-xs"
                 >
                   <option value="อุปกรณ์การเรียน">อุปกรณ์การเรียน</option>
                   <option value="อิเล็กทรอนิกส์">อิเล็กทรอนิกส์ (โทรศัพท์/หูฟัง)</option>
@@ -154,7 +157,7 @@ export default function ReportPage() {
               </div>
 
               <div>
-                <label htmlFor="date" className="block text-sm font-semibold text-slate-700 mb-1">
+                <label htmlFor="date" className="block text-xs sm:text-sm font-bold text-slate-700 mb-1.5">
                   {formData.type === 'lost' ? 'วันที่หาย' : 'วันที่พบ'} <span className="text-rose-500">*</span>
                 </label>
                 <input
@@ -164,14 +167,14 @@ export default function ReportPage() {
                   required
                   value={formData.date}
                   onChange={handleChange}
-                  className="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-600 focus:border-transparent text-sm"
+                  className="w-full px-4 py-3 sm:py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-600 focus:border-transparent text-base sm:text-sm shadow-xs"
                 />
               </div>
             </div>
 
             {/* Location */}
             <div>
-              <label htmlFor="location" className="block text-sm font-semibold text-slate-700 mb-1">
+              <label htmlFor="location" className="block text-xs sm:text-sm font-bold text-slate-700 mb-1.5">
                 {formData.type === 'lost' ? 'สถานที่ที่คาดว่าหาย' : 'สถานที่ที่พบสิ่งของ'} <span className="text-rose-500">*</span>
               </label>
               <input
@@ -181,33 +184,34 @@ export default function ReportPage() {
                 required
                 value={formData.location}
                 onChange={handleChange}
-                placeholder="เช่น โรงอาหารชั้น 1, ห้องเรียน 224 อาคาร 2, สนามฟุตบอล"
-                className="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-600 focus:border-transparent text-sm"
+                placeholder="เช่น โรงอาหาร, ห้อง 224 อาคาร 2, สนามฟุตบอล"
+                className="w-full px-4 py-3 sm:py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-600 focus:border-transparent text-base sm:text-sm shadow-xs"
               />
             </div>
 
             {/* Image URL */}
             <div>
-              <label htmlFor="imageUrl" className="block text-sm font-semibold text-slate-700 mb-1">
+              <label htmlFor="imageUrl" className="block text-xs sm:text-sm font-bold text-slate-700 mb-1.5">
                 ลิงก์รูปภาพสิ่งของ (URL)
               </label>
               <input
                 type="url"
                 id="imageUrl"
                 name="imageUrl"
+                inputMode="url"
                 value={formData.imageUrl}
                 onChange={handleChange}
                 placeholder="https://example.com/image.jpg (ถ้ามี)"
-                className="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-600 focus:border-transparent text-sm"
+                className="w-full px-4 py-3 sm:py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-600 focus:border-transparent text-base sm:text-sm shadow-xs"
               />
-              <p className="text-xs text-slate-400 mt-1">
-                หากไม่มีรูปภาพ ระบบจะแสดงภาพไอคอนแทนอัตโนมัติ
+              <p className="text-[11px] text-slate-400 mt-1">
+                หากไม่มีลิงก์รูปภาพ ระบบจะใส่ภาพไอคอนทดแทนให้โดยอัตโนมัติ
               </p>
             </div>
 
             {/* Description */}
             <div>
-              <label htmlFor="description" className="block text-sm font-semibold text-slate-700 mb-1">
+              <label htmlFor="description" className="block text-xs sm:text-sm font-bold text-slate-700 mb-1.5">
                 รายละเอียดเพิ่มเติม / จุดสังเกต
               </label>
               <textarea
@@ -217,18 +221,18 @@ export default function ReportPage() {
                 value={formData.description}
                 onChange={handleChange}
                 placeholder="ระบุสี, รอยตำหนิ, สติกเกอร์ หรือสิ่งของที่อยู่ด้านใน..."
-                className="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-600 focus:border-transparent text-sm"
+                className="w-full px-4 py-3 sm:py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-600 focus:border-transparent text-base sm:text-sm shadow-xs"
               />
             </div>
 
             {/* Contact Information Section */}
             <div className="pt-4 border-t border-slate-200">
-              <h3 className="font-semibold text-slate-800 text-sm mb-3">
+              <h3 className="font-bold text-slate-800 text-sm mb-3">
                 ข้อมูลผู้แจ้ง / ช่องทางติดต่อ
               </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
                 <div>
-                  <label htmlFor="contactName" className="block text-xs text-slate-600 mb-1">
+                  <label htmlFor="contactName" className="block text-xs font-semibold text-slate-600 mb-1">
                     ชื่อ-นามสกุล / ชั้นเรียน
                   </label>
                   <input
@@ -238,21 +242,22 @@ export default function ReportPage() {
                     value={formData.contactName}
                     onChange={handleChange}
                     placeholder="เช่น สมชาย ใจดี ม.3/1"
-                    className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-600 focus:border-transparent text-sm"
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-600 focus:border-transparent text-base sm:text-sm shadow-xs"
                   />
                 </div>
                 <div>
-                  <label htmlFor="contactInfo" className="block text-xs text-slate-600 mb-1">
+                  <label htmlFor="contactInfo" className="block text-xs font-semibold text-slate-600 mb-1">
                     เบอร์โทรศัพท์ / LINE ID
                   </label>
                   <input
                     type="text"
                     id="contactInfo"
                     name="contactInfo"
+                    inputMode="tel"
                     value={formData.contactInfo}
                     onChange={handleChange}
-                    placeholder="เช่น 081-xxx-xxxx, Line: @bjs3"
-                    className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-600 focus:border-transparent text-sm"
+                    placeholder="เช่น 081-xxx-xxxx, Line: @bj3"
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-600 focus:border-transparent text-base sm:text-sm shadow-xs"
                   />
                 </div>
               </div>
@@ -261,13 +266,13 @@ export default function ReportPage() {
             {/* Submit Button */}
             <button
               type="submit"
-              className={`w-full py-3.5 px-4 rounded-xl text-white font-bold text-base shadow-md transition-all ${
+              className={`w-full min-h-[52px] py-3.5 px-4 rounded-2xl text-white font-bold text-base shadow-md transition-all touch-active flex items-center justify-center space-x-2 ${
                 formData.type === 'lost'
-                  ? 'bg-rose-600 hover:bg-rose-700'
-                  : 'bg-emerald-600 hover:bg-emerald-700'
+                  ? 'bg-rose-600 hover:bg-rose-700 active:bg-rose-800 shadow-rose-200'
+                  : 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 shadow-emerald-200'
               }`}
             >
-              {formData.type === 'lost' ? '📢 ส่งข้อมูลแจ้งของหาย' : '🟢 ส่งข้อมูลแจ้งพบของ'}
+              <span>{formData.type === 'lost' ? '📢 ส่งข้อมูลแจ้งของหาย' : '🟢 ส่งข้อมูลแจ้งพบของ'}</span>
             </button>
           </form>
         )}
